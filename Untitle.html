@@ -1,0 +1,374 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Universal Knowledge Bot (Live + KB + Math/Finance)</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <style>
+    :root { --bg:#0b1320; --card:#111a2e; --text:#e8eefc; --muted:#a9b7d9; --accent:#4fd1c5; --border:#243b6b; }
+    * { box-sizing: border-box; }
+    body { margin:0; font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, "Helvetica Neue", Arial, sans-serif; background: linear-gradient(180deg, var(--bg), #081022); color: var(--text); }
+    header { padding: 20px; border-bottom: 1px solid var(--border); background: rgba(17,26,46,0.7); backdrop-filter: blur(6px); position: sticky; top:0; z-index: 10; }
+    h1 { margin:0 0 6px; font-size: 20px; letter-spacing: 0.2px; }
+    .sub { color: var(--muted); font-size: 13px; }
+    .wrap { max-width: 1000px; margin: 0 auto; padding: 20px; }
+    .card { background: var(--card); border: 1px solid var(--border); border-radius: 14px; padding: 16px; margin-bottom: 16px; }
+    .row { display: flex; gap: 10px; }
+    input[type="text"] { flex: 1; padding: 12px; border-radius: 10px; border: 1px solid var(--border); background: #0a1326; color: var(--text); }
+    button { background: var(--accent); color: #041019; border: none; border-radius: 10px; padding: 12px 16px; font-weight: 600; cursor: pointer; }
+    button.secondary { background: #193b4a; color: var(--text); }
+    .answer { margin-top: 12px; white-space: pre-wrap; line-height: 1.5; }
+    .sources { color: var(--muted); font-size: 12px; margin-top: 8px; }
+    .grid { display: grid; grid-template-columns: 1fr; gap: 16px; }
+    @media (min-width: 980px) { .grid { grid-template-columns: 1fr 360px; } }
+    .pill { display:inline-block; background:#0a1326; border:1px solid var(--border); border-radius:999px; padding:4px 10px; font-size:12px; color:var(--muted); margin: 0 6px 6px 0; cursor:pointer; }
+    .hint { color: var(--muted); font-size: 12px; margin-top: 8px; }
+    .section-title { font-size: 14px; color: var(--muted); margin: 12px 0 6px; }
+    .code { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace; background:#0a1326; border:1px solid var(--border); border-radius:8px; padding:10px; display:block; margin-top:8px; color:#cfe3ff; }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Universal Knowledge Bot</h1>
+    <div class="sub">Live web lookups + fishing KB + math/finance rapid‑fire module.</div>
+  </header>
+
+  <div class="wrap grid">
+    <!-- Ask & Answer -->
+    <section class="card">
+      <h2>Ask a question</h2>
+      <div class="row">
+        <input id="q" type="text" placeholder="e.g., 15% of 899? | Markup 25% on cost 480? | What is inflation? | Best bait for yellowfin?" />
+        <button id="ask">Ask</button>
+        <button id="clear" class="secondary">Clear</button>
+      </div>
+      <div class="hint">Tip: Use concise math prompts (e.g., “VAT 15% on 1299”, “discount 30% from 799”, “compound 12% yearly for 5y on 10,000”).</div>
+      <div class="answer" id="ans"></div>
+      <div class="sources" id="src"></div>
+      <div class="section-title">Examples</div>
+      <div id="examples">
+        <span class="pill" data-example="Best yellowfin tuna techniques for Cape Town">Yellowfin techniques</span>
+        <span class="pill" data-example="Inflation definition">Inflation</span>
+        <span class="pill" data-example="World War II summary">WW2 summary</span>
+        <span class="pill" data-example="15% of 899">15% of 899</span>
+        <span class="pill" data-example="Discount 30% from 799">Discount 30% from 799</span>
+        <span class="pill" data-example="Markup 25% on cost 480">Markup 25% on cost 480</span>
+        <span class="pill" data-example="Margin 25% selling price 640">Margin 25% selling price 640</span>
+        <span class="pill" data-example="Compound interest 12% yearly for 5y on 10000">Compound interest 12% yearly for 5y on 10000</span>
+        <span class="pill" data-example="Solve x + 3 = 11">Solve x + 3 = 11</span>
+      </div>
+    </section>
+
+    <!-- Sidebar: Fishing KB -->
+    <section class="card">
+      <h2>Fishing KB parameters</h2>
+      <div><strong>Seasonality:</strong> <span id="kb_season"></span></div>
+      <div><strong>Hotspots:</strong> <span id="kb_spots"></span></div>
+      <div><strong>Tackle:</strong> <span id="kb_tackle"></span></div>
+      <div><strong>Techniques:</strong> <span id="kb_tech"></span></div>
+      <div><strong>Bait:</strong> <span id="kb_bait"></span></div>
+      <div><strong>Best times:</strong> <span id="kb_times"></span></div>
+      <div><strong>Regulations:</strong> <span id="kb_regs"></span></div>
+      <div><strong>Notes:</strong> <span id="kb_notes"></span></div>
+    </section>
+  </div>
+
+  <script>
+    // Local KB (fishing)
+    const KB = {
+      fishing: {
+        seasonality: "Summer–autumn in Cape waters; peak when SST ~20–24°C.",
+        hotspots: "Offshore Cape Point, canyon edges, temperature breaks.",
+        tackle: "30–80 lb class rods; lever-drag reels; fluorocarbon leaders.",
+        techniques: "Trolling lures, chumming, live-bait drift, vertical jigging.",
+        bait: "Sardine, mackerel, squid strips; trolling feathers and plugs.",
+        best_times: "Dawn and dusk; current edges and bait schools.",
+        regulations: "Check local permits and bag limits; rules change by season/area.",
+        notes: "Yellowfin fight hard with long runs and deep dives—keep steady drag and clear the deck."
+      }
+    };
+
+    // Render fishing KB sidebar
+    const setText = (id, t) => document.getElementById(id).textContent = t;
+    setText("kb_season", KB.fishing.seasonality);
+    setText("kb_spots", KB.fishing.hotspots);
+    setText("kb_tackle", KB.fishing.tackle);
+    setText("kb_tech", KB.fishing.techniques);
+    setText("kb_bait", KB.fishing.bait);
+    setText("kb_times", KB.fishing.best_times);
+    setText("kb_regs", KB.fishing.regulations);
+    setText("kb_notes", KB.fishing.notes);
+
+    // Utility: timeout wrapper for fetch
+    function fetchWithTimeout(url, options = {}, timeoutMs = 6000) {
+      const controller = new AbortController();
+      const id = setTimeout(() => controller.abort(), timeoutMs);
+      return fetch(url, { ...options, signal: controller.signal })
+        .finally(() => clearTimeout(id));
+    }
+
+    // Live lookup: DuckDuckGo Instant Answer
+    async function duckDuckGoIA(query) {
+      const url = "https://api.duckduckgo.com/?q=" + encodeURIComponent(query) + "&format=json&no_html=1&skip_disambig=1";
+      const res = await fetchWithTimeout(url);
+      if (!res.ok) throw new Error("DDG IA error");
+      const data = await res.json();
+      let text = data.AbstractText || "";
+      let srcUrl = data.AbstractURL || "";
+      if (!text && data.RelatedTopics && data.RelatedTopics.length) {
+        const rt = data.RelatedTopics[0];
+        if (rt && rt.Text) {
+          text = rt.Text;
+          srcUrl = rt.FirstURL || "";
+        }
+      }
+      return { text, srcUrl, sourceName: "DuckDuckGo Instant Answer" };
+    }
+
+    // Live lookup: Wikipedia summary
+    async function wikipediaSummary(query) {
+      const title = query.trim().replace(/\s+/g, "_");
+      const directUrl = "https://en.wikipedia.org/api/rest_v1/page/summary/" + encodeURIComponent(title);
+      let res = await fetchWithTimeout(directUrl);
+      if (res.status === 404) {
+        const searchUrl = "https://en.wikipedia.org/w/rest.php/v1/search/title?q=" + encodeURIComponent(query) + "&limit=1";
+        const sres = await fetchWithTimeout(searchUrl);
+        if (!sres.ok) throw new Error("Wiki search error");
+        const sdata = await sres.json();
+        const hit = (sdata.pages && sdata.pages[0] && sdata.pages[0].title) ? sdata.pages[0].title : null;
+        if (!hit) return { text: "", srcUrl: "", sourceName: "Wikipedia" };
+        res = await fetchWithTimeout("https://en.wikipedia.org/api/rest_v1/page/summary/" + encodeURIComponent(hit));
+      }
+      if (!res.ok) throw new Error("Wiki summary error");
+      const data = await res.json();
+      const text = data.extract || "";
+      const srcUrl = data.content_urls && data.content_urls.desktop ? data.content_urls.desktop.page : (data.source || "");
+      return { text, srcUrl, sourceName: "Wikipedia" };
+    }
+
+    // Math/Finance rapid-fire module
+    function toNum(str) {
+      const m = String(str).match(/-?\d+(\.\d+)?/);
+      return m ? parseFloat(m[0]) : null;
+    }
+    function pctOf(pct, base) {
+      const r = (pct/100)*base;
+      return { steps: [`Percent: ${pct}%`, `Base: ${base}`, `Compute: (${pct}/100) * ${base} = ${r}`], result: r };
+    }
+    function addVAT(amount, vat) {
+      const vatAmt = (vat/100)*amount;
+      const total = amount + vatAmt;
+      return { steps: [`Amount: ${amount}`, `VAT: ${vat}%`, `VAT amount: (${vat}/100)*${amount} = ${vatAmt}`, `Total: ${amount} + ${vatAmt} = ${total}`], result: total };
+    }
+    function discount(amount, pct) {
+      const d = (pct/100)*amount;
+      const total = amount - d;
+      return { steps: [`Price: ${amount}`, `Discount: ${pct}%`, `Discount amount: (${pct}/100)*${amount} = ${d}`, `Final price: ${amount} - ${d} = ${total}`], result: total };
+    }
+    function markupOnCost(cost, pct) {
+      const m = (pct/100)*cost;
+      const price = cost + m;
+      return { steps: [`Cost: ${cost}`, `Markup: ${pct}% of cost`, `Markup amount: (${pct}/100)*${cost} = ${m}`, `Selling price: ${cost} + ${m} = ${price}`], result: price };
+    }
+    function marginOnPrice(price, pct) {
+      const cost = price * (1 - pct/100);
+      const marginAmt = price - cost;
+      return { steps: [`Selling price: ${price}`, `Target margin: ${pct}% (margin is % of selling price)`, `Cost: price * (1 - margin) = ${price} * (1 - ${pct}/100) = ${cost}`, `Margin amount: ${price} - ${cost} = ${marginAmt}`], result: { cost, marginAmt } };
+    }
+    function compound(P, rPct, years, freq=1) {
+      const r = rPct/100;
+      const A = P * Math.pow(1 + r/freq, freq*years);
+      const interest = A - P;
+      return { steps: [`Principal: ${P}`, `Rate: ${rPct}%`, `Years: ${years}`, `Compounds/year: ${freq}`, `Formula: A = P(1 + r/n)^{n*t}`, `Compute: A = ${P} * (1 + ${r}/${freq})^{${freq}*${years}} = ${A}`, `Interest: A - P = ${A} - ${P} = ${interest}`], result: { amount: A, interest } };
+    }
+    function convertCurrency(amount, rate) {
+      const out = amount * rate;
+      return { steps: [`Amount: ${amount}`, `Rate: ${rate}`, `Compute: ${amount} * ${rate} = ${out}`], result: out };
+    }
+    function unitConvert(value, factor) {
+      const out = value * factor;
+      return { steps: [`Value: ${value}`, `Factor: ${factor}`, `Compute: ${value} * ${factor} = ${out}`], result: out };
+    }
+    function solveLinear(equation) {
+      // Supports forms like "x + a = b", "a + x = b", "x - a = b", "a - x = b", "kx = b"
+      const s = equation.replace(/\s+/g, "");
+      const mAdd = s.match(/^x\+(-?\d+(\.\d+)?)=(-?\d+(\.\d+)?)$/) || s.match(/^(-?\d+(\.\d+)?)\+x=(-?\d+(\.\d+)?)$/);
+      const mSub = s.match(/^x\-(-?\d+(\.\d+)?)=(-?\d+(\.\d+)?)$/) || s.match(/^(-?\d+(\.\d+)?)\-x=(-?\d+(\.\d+)?)$/);
+      const mMul = s.match(/^(-?\d+(\.\d+)?)x=(-?\d+(\.\d+)?)$/);
+      if (mAdd) {
+        const a = parseFloat(mAdd[1]); const b = parseFloat(mAdd[3]);
+        const x = b - a;
+        return { steps: [`Equation: x + ${a} = ${b}`, `Subtract ${a} both sides: x = ${b} - ${a} = ${x}`], result: x };
+      }
+      if (mSub) {
+        if (s.startsWith("x-")) {
+          const a = parseFloat(mSub[1]); const b = parseFloat(mSub[3]);
+          const x = b + a;
+          return { steps: [`Equation: x - ${a} = ${b}`, `Add ${a} both sides: x = ${b} + ${a} = ${x}`], result: x };
+        } else {
+          const a = parseFloat(mSub[1]); const b = parseFloat(mSub[3]);
+          const x = a - b;
+          return { steps: [`Equation: ${a} - x = ${b}`, `Subtract ${b}: ${a} - b = x`, `x = ${a} - ${b} = ${x}`], result: x };
+        }
+      }
+      if (mMul) {
+        const k = parseFloat(mMul[1]); const b = parseFloat(mMul[3]);
+        const x = b / k;
+        return { steps: [`Equation: ${k}x = ${b}`, `Divide both sides by ${k}: x = ${b}/${k} = ${x}`], result: x };
+      }
+      return null;
+    }
+
+    // Detect and route math/finance prompts
+    function tryMathFinance(q) {
+      const L = q.toLowerCase();
+
+      // Percentage of
+      let m = L.match(/(\d+(\.\d+)?)\s*%\s*of\s*(\d+(\.\d+)?)/);
+      if (m) { const out = pctOf(parseFloat(m[1]), parseFloat(m[3])); return formatSteps(out.steps, out.result); }
+
+      // VAT add
+      m = L.match(/vat\s*(\d+(\.\d+)?)\s*%\s*on\s*(\d+(\.\d+)?)/);
+      if (m) { const out = addVAT(parseFloat(m[3]), parseFloat(m[1])); return formatSteps(out.steps, out.result); }
+
+      // Discount
+      m = L.match(/discount\s*(\d+(\.\d+)?)\s*%\s*from\s*(\d+(\.\d+)?)/);
+      if (m) { const out = discount(parseFloat(m[3]), parseFloat(m[1])); return formatSteps(out.steps, out.result); }
+
+      // Markup on cost
+      m = L.match(/markup\s*(\d+(\.\d+)?)\s*%\s*on\s*cost\s*(\d+(\.\d+)?)/);
+      if (m) { const out = markupOnCost(parseFloat(m[4]), parseFloat(m[1])); return formatSteps(out.steps, out.result); }
+
+      // Margin on price
+      m = L.match(/margin\s*(\d+(\.\d+)?)\s*%\s*(?:selling\s*price|sp)\s*(\d+(\.\d+)?)/);
+      if (m) { const out = marginOnPrice(parseFloat(m[2]), parseFloat(m[1])); return formatSteps(out.steps, `Cost=${out.result.cost}, Margin=${out.result.marginAmt}`); }
+
+      // Compound interest
+      m = L.match(/compound(?:\s*interest)?\s*(\d+(\.\d+)?)\s*%\s*(?:yearly|per\s*year)?\s*for\s*(\d+)\s*y(?:ears|)?\s*on\s*(\d+(\.\d+)?)/);
+      if (m) { const out = compound(parseFloat(m[4]), parseFloat(m[1]), parseFloat(m[3])); return formatSteps(out.steps, `Amount=${out.result.amount}, Interest=${out.result.interest}`); }
+
+      // Currency convert (amount at rate)
+      m = L.match(/convert\s*(\d+(\.\d+)?)\s*at\s*rate\s*(\d+(\.\d+)?)/);
+      if (m) { const out = convertCurrency(parseFloat(m[1]), parseFloat(m[3])); return formatSteps(out.steps, out.result); }
+
+      // Unit conversion (value times factor)
+      m = L.match(/convert\s*(\d+(\.\d+)?)\s*by\s*factor\s*(\d+(\.\d+)?)/);
+      if (m) { const out = unitConvert(parseFloat(m[1]), parseFloat(m[3])); return formatSteps(out.steps, out.result); }
+
+      // Simple linear solve
+      m = L.match(/solve\s*([x0-9\+\-\=\.\s]+)/);
+      if (m) {
+        const res = solveLinear(m[1]);
+        if (res) return formatSteps(res.steps, res.result);
+      }
+
+      return null; // not a math/finance prompt
+    }
+
+    function formatSteps(steps, result) {
+      const lines = ["Rapid‑fire steps:"].concat(steps);
+      lines.push(`Result: ${result}`);
+      return lines.join("\n");
+    }
+
+    // Local fishing matcher
+    function fishingAnswers(q) {
+      const L = q.toLowerCase();
+      const out = [];
+      if (L.match(/season|sst|month/)) out.push("Seasonality: " + KB.fishing.seasonality);
+      if (L.match(/hotspot|where|area|spot/)) out.push("Hotspots: " + KB.fishing.hotspots);
+      if (L.match(/tackle|gear|rod|reel|leader/)) out.push("Tackle: " + KB.fishing.tackle);
+      if (L.match(/technique|method|troll|chum|drift|jig/)) out.push("Techniques: " + KB.fishing.techniques);
+      if (L.match(/bait|lure|feather|plug|sardine|mackerel|squid/)) out.push("Bait: " + KB.fishing.bait);
+      if (L.match(/time|dawn|dusk|best/)) out.push("Best times: " + KB.fishing.best_times);
+      if (L.match(/regulation|permit|bag|limit|law/)) out.push("Regulations: " + KB.fishing.regulations);
+      if (L.match(/note|fight|drag|run|dive/)) out.push("Notes: " + KB.fishing.notes);
+      return out;
+    }
+
+    // Compose final answer from sources + KB + math
+    function composeAnswer(parts) {
+      const mathParts = parts.filter(p => p && p.math).map(p => p.math.trim());
+      const kbParts = parts.filter(p => p && p.kbText).map(p => p.kbText.trim());
+      const textParts = parts.filter(p => p && p.text).map(p => p.text.trim());
+      const combined = []
+        .concat(mathParts.length ? mathParts : [])
+        .concat(kbParts.length ? ["Fishing insights:", ...kbParts] : [])
+        .concat(textParts.length ? ["", "Web summary:", ...textParts] : []);
+      const finalText = combined.join("\n");
+      const sources = parts
+        .filter(p => p && p.srcUrl)
+        .map(p => `- ${p.sourceName}: ${p.srcUrl}`);
+      return { finalText, sources };
+    }
+
+    async function ask(query) {
+      const ansEl = document.getElementById("ans");
+      const srcEl = document.getElementById("src");
+      ansEl.textContent = "";
+      srcEl.textContent = "";
+
+      const parts = [];
+
+      // Math/Finance first (instant)
+      const math = tryMathFinance(query);
+      if (math) parts.push({ math });
+
+      // Fishing KB
+      const kbHits = fishingAnswers(query);
+      kbHits.forEach(kb => parts.push({ kbText: kb }));
+
+      // Web lookups (only if not pure math)
+      if (!math) {
+        try {
+          const [ddg, wiki] = await Promise.allSettled([
+            duckDuckGoIA(query),
+            wikipediaSummary(query)
+          ]);
+          if (ddg.status === "fulfilled" && ddg.value.text) {
+            parts.push({ text: ddg.value.text, srcUrl: ddg.value.srcUrl, sourceName: ddg.value.sourceName });
+          }
+          if (wiki.status === "fulfilled" && wiki.value.text) {
+            parts.push({ text: wiki.value.text, srcUrl: wiki.value.srcUrl, sourceName: wiki.value.sourceName });
+          }
+        } catch (e) { /* non-fatal */ }
+      }
+
+      const { finalText, sources } = composeAnswer(parts);
+
+      if (!finalText.trim()) {
+        ansEl.textContent = "Oh, I don’t know this.";
+        return;
+      }
+
+      ansEl.textContent = finalText;
+      if (sources.length) {
+        srcEl.innerHTML = "Sources:<br>" + sources.map(s => `<span class="pill">${s}</span>`).join(" ");
+      }
+    }
+
+    // Wire UI
+    const input = document.getElementById("q");
+    document.getElementById("ask").addEventListener("click", () => {
+      const q = input.value.trim();
+      if (!q) return;
+      ask(q);
+    });
+    document.getElementById("clear").addEventListener("click", () => {
+      input.value = "";
+      document.getElementById("ans").textContent = "";
+      document.getElementById("src").textContent = "";
+      input.focus();
+    });
+    document.querySelectorAll("[data-example]").forEach(el => {
+      el.addEventListener("click", () => {
+        input.value = el.getAttribute("data-example");
+        document.getElementById("ask").click();
+      });
+    });
+    input.addEventListener("keydown", (e) => {
+      if (e.key === "Enter") document.getElementById("ask").click();
+    });
+  </script>
+</body>
+</html>
